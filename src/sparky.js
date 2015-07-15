@@ -5,9 +5,7 @@
         version: "0.2.1"
     };
 
-    var lib = sparky.lib = (typeof d3 === "object") ?
-        d3 :
-        (function() {
+    var lib = sparky.lib = (function() {
             var shim = {};
 
             // like d3.keys(), returns an array of the object's keys
