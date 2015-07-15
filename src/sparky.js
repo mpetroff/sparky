@@ -1,11 +1,13 @@
 (function(exports) {
+    "use strict";
+
     var sparky = exports.sparky = {
         version: "0.2.1"
     };
 
-    var lib = sparky.lib = (typeof d3 === "object")
-        ? d3
-        : (function() {
+    var lib = sparky.lib = (typeof d3 === "object") ?
+        d3 :
+        (function() {
             var shim = {};
 
             // like d3.keys(), returns an array of the object's keys
@@ -94,15 +96,17 @@
             // coerce a value into the identity function if it's not a
             // function already
             shim.functor = function(v) {
-                return (typeof v === "function")
-                    ? v
-                    : function() { return v; };
+                return (typeof v === "function") ?
+                    v :
+                    function() { return v; };
             };
 
             return shim;
         })();
 
     sparky.sparkline = function(parent, data, config, overrides) {
+
+        var i, did_min, did_max, val, meta;
 
         // attempt to query the document for the provided selector
         if (typeof parent === "string") {
@@ -114,9 +118,9 @@
         }
 
         // merge defaults and options, or fetch presets
-        var options = (typeof config === "string")
-            ? sparky.presets.get(config, overrides)
-            : _extend(sparky.sparkline.defaults, config || {});
+        var options = (typeof config === "string") ?
+            sparky.presets.get(config, overrides) :
+            _extend(sparky.sparkline.defaults, config || {});
 
         // remember the length of the data array
         var data_len = data.length;
@@ -184,7 +188,7 @@
                 rect.setAttribute("width", width - padding * 2);
                 rect.setAttribute("height", ry2 - ry1);
                 rect.setAttribute("fill", options.range_fill);
-                paper && paper.appendChild(rect);
+                paper.appendChild(rect);
             }
         }
 
@@ -205,9 +209,9 @@
 
             // proportional height
             var BH = function(val) {
-                return avail_height * ((val >= baseline)
-                    ? (val - baseline) / spread
-                    : (baseline - val) / spread);
+                return avail_height * ((val >= baseline) ?
+                    (val - baseline) / spread :
+                    (baseline - val) / spread);
             };
             var BY = lib.scale.linear()
                 .domain([baseline, dmax])
@@ -217,31 +221,28 @@
                 .domain([0, data_len - 1])
                 .range([padding, padding + avail_width - bar_width]);
 
-            var y0 = BY(baseline);
-
-            var did_min = false,
-                did_max = false;
-            for (var i = 0; i < data_len; i++) {
+            did_min = did_max = false;
+            for (i = 0; i < data_len; i++) {
                 // get the screen coordinate and the value,
-                var val = get_val(data[i]),
-                    x = BX(i),
+                val = get_val(data[i]);
+                var x = BX(i),
                     y = BY(val),
-                    h = BH(val),
-                    // generate some metadata:
-                    meta = {
-                        // true if it's first in the list
-                        first: i == 0,
-                        // true if it's last in the list
-                        last: i == data_len - 1,
-                        // true if it's >= maximum value
-                        max: did_max ? false : (did_max = val >= dmax),
-                        // true if it's <= minimum value
-                        min: did_min ? false : (did_min = val <= dmin),
-                        // true if it's above the baseline
-                        above: val >= baseline,
-                        // true if it's below the baseline
-                        below: val <= baseline
-                    };
+                    h = BH(val);
+                // generate some metadata:
+                meta = {
+                    // true if it's first in the list
+                    first: i === 0,
+                    // true if it's last in the list
+                    last: i == data_len - 1,
+                    // true if it's >= maximum value
+                    max: did_max ? false : (did_max = val >= dmax),
+                    // true if it's <= minimum value
+                    min: did_min ? false : (did_min = val <= dmin),
+                    // true if it's above the baseline
+                    above: val >= baseline,
+                    // true if it's below the baseline
+                    below: val <= baseline
+                };
                 // create the bar
                 var bar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                 bar.setAttribute("x", x);
@@ -249,7 +250,7 @@
                 bar.setAttribute("width", bar_width);
                 bar.setAttribute("height", h);
                 bar.setAttribute("fill", bar_fill.call(meta, data[i], i));
-                paper && paper.appendChild(bar);
+                paper.appendChild(bar);
             }
 
         // otherwise, do the dots
@@ -257,7 +258,7 @@
 
             // create an array of screen coordinates for each datum
             var points = [];
-            for (var i = 0; i < data_len; i++) {
+            for (i = 0; i < data_len; i++) {
                 points.push({
                     x: XX(i),
                     y: YY(data[i])
@@ -275,7 +276,7 @@
             }
 
             var path = [];
-            for (var i = 0; i < points.length; i++) {
+            for (i = 0; i < points.length; i++) {
                 var p = points[i];
                 path.push((i === 0) ? "M" : "L", p.x, ",", p.y);
             }
@@ -286,7 +287,7 @@
             line.setAttribute("fill", options.area_fill || "none");
             line.setAttribute("stroke", options.line_stroke || "black");
             line.setAttribute("stroke-width", options.line_stroke_width || 1.5);
-            paper && paper.appendChild(line);
+            paper.appendChild(line);
 
             // define our radius and color getters for dots
             var dot_radius = lib.functor(options.dot_radius),
@@ -294,25 +295,24 @@
                 dot_stroke = lib.functor(options.dot_stroke || "none"),
                 dot_stroke_width = lib.functor(options.dot_stroke_width || 0);
 
-            var did_min = false,
-                did_max = false;
-            for (var i = 0; i < data_len; i++) {
+            did_min = did_max = false;
+            for (i = 0; i < data_len; i++) {
                 // get the screen coordinate and the value,
-                var point = points[i],
-                    val = get_val(data[i]),
-                    // generate some metadata:
-                    meta = {
-                        // true if it's first in the list
-                        first: i == 0,
-                        // true if it's last in the list
-                        last: i == data_len - 1,
-                        // true if it's >= maximum value
-                        max: did_max ? false : (did_max = val >= dmax),
-                        // true if it's <= minimum value
-                        min: did_min ? false : (did_min = val <= dmin)
-                    },
-                    // get the radius
-                    r = dot_radius.call(meta, data[i], i);
+                var point = points[i];
+                val = get_val(data[i]);
+                // generate some metadata:
+                meta = {
+                    // true if it's first in the list
+                    first: i === 0,
+                    // true if it's last in the list
+                    last: i == data_len - 1,
+                    // true if it's >= maximum value
+                    max: did_max ? false : (did_max = val >= dmax),
+                    // true if it's <= minimum value
+                    min: did_min ? false : (did_min = val <= dmin)
+                };
+                // get the radius
+                var r = dot_radius.call(meta, data[i], i);
                 // only create the dot if the radius > 0
                 if (r > 0 && !isNaN(r)) {
                     // create the dot
@@ -323,7 +323,7 @@
                     dot.setAttribute("fill", dot_fill.call(meta, data[i], i));
                     dot.setAttribute("stroke", dot_stroke.call(meta, data[i], i));
                     dot.setAttribute("stroke-width", dot_stroke_width.call(meta, data[i], i));
-                    paper && paper.appendChild(dot);
+                    paper.appendChild(dot);
                 }
             }
         }
@@ -446,7 +446,8 @@
      * });
      */
     sparky.presets.extend = function(base, id, options) {
-        return sparky.presets[id] = _extend(sparky.presets[base], options);
+        sparky.presets[id] = _extend(sparky.presets[base], options);
+        return sparky.presets[id];
     };
 
     // defaults
@@ -471,23 +472,23 @@
         line_stroke_width:  1,
         range_fill:         "#ddd",
         dot_fill:           "#f00",
-        dot_radius: function(d, i) {
+        dot_radius: function() {
             return this.last ? 2 : 0;
         }
     });
 
     sparky.presets.extend("hilite-last", "hilite-peaks", {
-        dot_fill: function(d, i) {
-            return (this.first || this.last)
-                ? "#f00"
-                : (this.min || this.max)
-                  ? "#339ACF"
-                  : null;
+        dot_fill: function() {
+            return (this.first || this.last) ?
+                "#f00" :
+                (this.min || this.max) ?
+                  "#339ACF" :
+                  null;
         },
-        dot_radius: function(d, i) {
-            return (this.first || this.last || this.min || this.max)
-                ? 2
-                : 0;
+        dot_radius: function() {
+            return (this.first || this.last || this.min || this.max) ?
+                2 :
+                0;
         }
     });
 
@@ -495,7 +496,7 @@
         padding:            0,
         line_stroke:        "none",
         dot_fill:           "none",
-        bar_fill: function(d, i) {
+        bar_fill: function() {
             return this.above ? "black" : "red";
         }
     });
@@ -505,8 +506,8 @@
         line_stroke:    "none",
         dot_fill:       "none",
         bar_fill:       "#333",
-        bar_spacing:    .5,
-        baseline:       .5,
+        bar_spacing:    0.5,
+        baseline:       0.5,
         min:            0,
         max:            1
     });
@@ -528,11 +529,12 @@
      * contain the values of the second, and return it as a new object.
      */
     function _extend(defaults, options) {
-        var o = {};
-        for (var k in defaults) {
+        var o = {},
+            k;
+        for (k in defaults) {
             o[k] = defaults[k];
         }
-        for (var k in options) {
+        for (k in options) {
             o[k] = options[k];
         }
         return o;
