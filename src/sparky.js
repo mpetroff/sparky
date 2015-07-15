@@ -141,8 +141,36 @@
                 .domain([dmin, dmax])
                 .range([height - padding, padding]);
 
-        // create our Raphael surface
-        var paper = Raphael(parent, width, height);
+        // create SVG
+        var paper = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        paper.setAttribute("width", width);
+        paper.setAttribute("height", height);
+        paper.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        paper.style.cssText = "overflow:hidden;position:relative";
+        if (parent.firstChild) {
+            parent.insertBefore(paper, parent.firstChild);
+        } else {
+            parent.appendChild(paper);
+        }
+
+        // Deal with issue with Firefox and IE9 regarding subpixel rendering.
+        // Based on Paper.renderfix from Raphael's `raphael.svg.js`
+        var pos;
+        try {
+            pos = paper.getScreenCTM() || paper.createSVGMatrix();
+        } catch (e) {
+            pos = paper.createSVGMatrix();
+        }
+        var left = -pos.e % 1,
+            top = -pos.f % 1;
+        if (left || top) {
+            if (left) {
+                paper.style.left = left + "px";
+            }
+            if (top) {
+                paper.style.top = top + "px";
+            }
+        }
 
         if (options.range_fill && options.range_fill != "none") {
             // FIXME: complain if range_min and range_max aren't defined?
@@ -150,12 +178,13 @@
                 ry2 = YY(options.range_min);
             // only create a rect
             if (ry1 != ry2) {
-                rect = paper.rect(padding, ry1, width - padding * 2, ry2 - ry1)
-                    .attr({
-                        "class":    "range",
-                        "stroke":   "none",
-                        "fill":     options.range_fill
-                    });
+                var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", padding);
+                rect.setAttribute("y", ry1);
+                rect.setAttribute("width", width - padding * 2);
+                rect.setAttribute("height", ry2 - ry1);
+                rect.setAttribute("fill", options.range_fill);
+                paper && paper.appendChild(rect);
             }
         }
 
@@ -190,10 +219,6 @@
 
             var y0 = BY(baseline);
 
-            // create a Raphael set for the bars
-            var bars = paper.set();
-            // (and stash it on the paper object for later use)
-            paper.bars = bars;
             var did_min = false,
                 did_max = false;
             for (var i = 0; i < data_len; i++) {
@@ -217,14 +242,14 @@
                         // true if it's below the baseline
                         below: val <= baseline
                     };
-                // create the dot
-                var bar = paper.rect(x, y, bar_width, h)
-                    .attr({
-                        "class":    "bar",
-                        "stroke":   "none",
-                        "fill":     bar_fill.call(meta, data[i], i)
-                    });
-                bars.push(bar);
+                // create the bar
+                var bar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                bar.setAttribute("x", x);
+                bar.setAttribute("y", y);
+                bar.setAttribute("width", bar_width);
+                bar.setAttribute("height", h);
+                bar.setAttribute("fill", bar_fill.call(meta, data[i], i));
+                paper && paper.appendChild(bar);
             }
 
         // otherwise, do the dots
@@ -256,13 +281,12 @@
             }
             // path.push("Z");
             // generate the path, and set its fill and stroke attributes
-            var line = paper.path(path.join(" "))
-                .attr({
-                    "class":        "line",
-                    "fill":         options.area_fill || "none",
-                    "stroke":       options.line_stroke || "black",
-                    "stroke-width": options.line_stroke_width || 1.5
-                });
+            var line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            line.setAttribute("d", path.join(" "));
+            line.setAttribute("fill", options.area_fill || "none");
+            line.setAttribute("stroke", options.line_stroke || "black");
+            line.setAttribute("stroke-width", options.line_stroke_width || 1.5);
+            paper && paper.appendChild(line);
 
             // define our radius and color getters for dots
             var dot_radius = lib.functor(options.dot_radius),
@@ -270,10 +294,6 @@
                 dot_stroke = lib.functor(options.dot_stroke || "none"),
                 dot_stroke_width = lib.functor(options.dot_stroke_width || 0);
 
-            // create a Raphael set for the dots
-            var dots = paper.set();
-            // (and stash it on the paper object for later use)
-            paper.dots = dots;
             var did_min = false,
                 did_max = false;
             for (var i = 0; i < data_len; i++) {
@@ -296,15 +316,14 @@
                 // only create the dot if the radius > 0
                 if (r > 0 && !isNaN(r)) {
                     // create the dot
-                    var dot = paper.circle(point.x, point.y)
-                        .attr({
-                            "r":            r,
-                            "class":        "dot",
-                            "stroke":       dot_stroke.call(meta, data[i], i),
-                            "stroke-width": dot_stroke_width.call(meta, data[i], i),
-                            "fill":         dot_fill.call(meta, data[i], i)
-                        });
-                    dots.push(dot);
+                    var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    dot.setAttribute("cx", point.x);
+                    dot.setAttribute("cy", point.y);
+                    dot.setAttribute("r", r);
+                    dot.setAttribute("fill", dot_fill.call(meta, data[i], i));
+                    dot.setAttribute("stroke", dot_stroke.call(meta, data[i], i));
+                    dot.setAttribute("stroke-width", dot_stroke_width.call(meta, data[i], i));
+                    paper && paper.appendChild(dot);
                 }
             }
         }
