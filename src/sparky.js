@@ -157,25 +157,6 @@
             parent.appendChild(paper);
         }
 
-        // Deal with issue with Firefox and IE9 regarding subpixel rendering.
-        // Based on Paper.renderfix from Raphael's `raphael.svg.js`
-        var pos;
-        try {
-            pos = paper.getScreenCTM() || paper.createSVGMatrix();
-        } catch (e) {
-            pos = paper.createSVGMatrix();
-        }
-        var left = -pos.e % 1,
-            top = -pos.f % 1;
-        if (left || top) {
-            if (left) {
-                paper.style.left = left + "px";
-            }
-            if (top) {
-                paper.style.top = top + "px";
-            }
-        }
-
         if (options.range_fill && options.range_fill != "none") {
             // FIXME: complain if range_min and range_max aren't defined?
             var ry1 = YY(options.range_max),
