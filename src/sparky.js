@@ -144,10 +144,12 @@
                 .range([height - padding, padding]);
 
         // create SVG
-        var paper = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        paper.setAttribute("width", width);
-        paper.setAttribute("height", height);
-        paper.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        var paper = _create("svg");
+        _attr(paper, {
+            "width": width,
+            "height": height,
+            "xmlns": "http://www.w3.org/2000/svg"
+        });
         paper.style.cssText = "overflow:hidden;position:relative";
         if (parent.firstChild) {
             parent.insertBefore(paper, parent.firstChild);
@@ -180,12 +182,14 @@
                 ry2 = YY(options.range_min);
             // only create a rect
             if (ry1 != ry2) {
-                var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                rect.setAttribute("x", padding);
-                rect.setAttribute("y", ry1);
-                rect.setAttribute("width", width - padding * 2);
-                rect.setAttribute("height", ry2 - ry1);
-                rect.setAttribute("fill", options.range_fill);
+                var rect = _create("rect");
+                _attr(rect, {
+                    "x": padding,
+                    "y": ry1,
+                    "width": width - padding * 2,
+                    "height": ry2 - ry1,
+                    "fill": options.range_fill
+                });
                 paper.appendChild(rect);
             }
         }
@@ -242,12 +246,14 @@
                     below: val <= baseline
                 };
                 // create the bar
-                var bar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                bar.setAttribute("x", x);
-                bar.setAttribute("y", y);
-                bar.setAttribute("width", bar_width);
-                bar.setAttribute("height", h);
-                bar.setAttribute("fill", bar_fill.call(meta, data[i], i));
+                var bar = _create("rect");
+                _attr(bar, {
+                    "x": x,
+                    "y": y,
+                    "width": bar_width,
+                    "height": h,
+                    "fill": bar_fill.call(meta, data[i], i)
+                });
                 paper.appendChild(bar);
             }
 
@@ -280,11 +286,13 @@
             }
             // path.push("Z");
             // generate the path, and set its fill and stroke attributes
-            var line = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            line.setAttribute("d", path.join(" "));
-            line.setAttribute("fill", options.area_fill || "none");
-            line.setAttribute("stroke", options.line_stroke || "black");
-            line.setAttribute("stroke-width", options.line_stroke_width || 1.5);
+            var line = _create("path");
+            _attr(line, {
+                "d": path.join(" "),
+                "fill": options.area_fill || "none",
+                "stroke": options.line_stroke || "black",
+                "stroke-width": options.line_stroke_width || 1.5
+            });
             paper.appendChild(line);
 
             // define our radius and color getters for dots
@@ -314,13 +322,15 @@
                 // only create the dot if the radius > 0
                 if (r > 0 && !isNaN(r)) {
                     // create the dot
-                    var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                    dot.setAttribute("cx", point.x);
-                    dot.setAttribute("cy", point.y);
-                    dot.setAttribute("r", r);
-                    dot.setAttribute("fill", dot_fill.call(meta, data[i], i));
-                    dot.setAttribute("stroke", dot_stroke.call(meta, data[i], i));
-                    dot.setAttribute("stroke-width", dot_stroke_width.call(meta, data[i], i));
+                    var dot = _create("circle");
+                    _attr(dot, {
+                        "cx": point.x,
+                        "cy": point.y,
+                        "r": r,
+                        "fill": dot_fill.call(meta, data[i], i),
+                        "stroke": dot_stroke.call(meta, data[i], i),
+                        "stoke-width": dot_stroke_width.call(meta, data[i], i)
+                    });
                     paper.appendChild(dot);
                 }
             }
@@ -536,6 +546,22 @@
             o[k] = options[k];
         }
         return o;
+    }
+    
+    /**
+     * Create SVG namespace DOM elements.
+     */
+    function _create(type) {
+        return document.createElementNS("http://www.w3.org/2000/svg", type);
+    }
+
+    /**
+     * Set attributes on element.
+     */
+    function _attr(el, attrs) {
+        for (var k in attrs) {
+            el.setAttribute(k, attrs[k]);
+        }
     }
 
 })(this);
