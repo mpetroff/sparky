@@ -448,14 +448,14 @@
         };
 
         return scale;
-    };
+    }
 
     /**
      * The identity function returns the value provided.
      */
     function _identity(v) {
         return v;
-    };
+    }
 
     /**
      * Coerce a value into the identity function if it's not a function
@@ -465,7 +465,7 @@
         return (typeof v === "function") ?
             v :
             function() { return v; };
-    };
+    }
 
     /**
      * Override all of the iterable properties in the first object so that they
