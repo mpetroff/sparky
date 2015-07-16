@@ -5,103 +5,6 @@
         version: "0.2.1"
     };
 
-    var lib = sparky.lib = (function() {
-            var shim = {};
-
-            // like d3.keys(), returns an array of the object's keys
-            shim.keys = function(obj) {
-                var keys = [];
-                for (var k in obj) keys.push(k);
-                return keys;
-            };
-
-            // returns the minimum value in an array, optionally derived from
-            // an accessor function
-            shim.min = function(values, accessor) {
-                var min = Number.POSITIVE_INFINITY,
-                    len = values.length;
-                for (var i = 0; i < len; i++) {
-                    var val = accessor ? accessor(values[i]) : values[i];
-                    if (val < min) min = val;
-                }
-                return min;
-            };
-
-            // returns the maximum value in an array, optionally derived from
-            // an accessor function
-            shim.max = function(values, accessor) {
-                var max = Number.NEGATIVE_INFINITY,
-                    len = values.length;
-                for (var i = 0; i < len; i++) {
-                    var val = accessor ? accessor(values[i]) : values[i];
-                    if (val > max) max = val;
-                }
-                return max;
-            };
-
-            shim.scale = {};
-
-            // our linear scale is simpler in that it only uses one value
-            shim.scale.linear = function() {
-                var dmin = 0, dmax = 1,
-                    rmin = 0, rmax = 1,
-                    clamp = false,
-                    scale = function(val) {
-                        if (clamp) {
-                            if (val < dmin) val = dmin;
-                            if (val > dmax) val = dmax;
-                        }
-                        return rmin + (rmax - rmin) * (val - dmin) / (dmax - dmin);
-                    };
-
-                scale.clamp = function(c) {
-                    if (arguments.length) {
-                        clamp = c;
-                        return scale;
-                    } else {
-                        return clamp;
-                    }
-                };
-
-                scale.domain = function(domain) {
-                    if (arguments.length) {
-                        dmin = domain[0];
-                        dmax = domain[1];
-                        return scale;
-                    } else {
-                        return [dmin, dmax];
-                    }
-                };
-
-                scale.range = function(range) {
-                    if (arguments.length) {
-                        rmin = range[0];
-                        rmax = range[1];
-                        return scale;
-                    } else {
-                        return [rmin, rmax];
-                    }
-                };
-
-                return scale;
-            };
-
-            // the identity function returns the value provided
-            shim.identity = function(v) {
-                return v;
-            };
-
-            // coerce a value into the identity function if it's not a
-            // function already
-            shim.functor = function(v) {
-                return (typeof v === "function") ?
-                    v :
-                    function() { return v; };
-            };
-
-            return shim;
-        })();
-
     sparky.sparkline = function(parent, data, config, overrides) {
 
         var i, did_min, did_max, val, meta;
@@ -123,23 +26,22 @@
         // remember the length of the data array
         var data_len = data.length;
         // get_val() is a value getter for each datum
-        var get_val = lib.functor(options.value);
+        var get_val = _functor(options.value);
         // figure out the minimum and maximum values
-        var dmin = isNaN(options.min) ? lib.min(data, get_val) : options.min,
-            dmax = isNaN(options.max) ? lib.max(data, get_val) : options.max;
+        var dmin = isNaN(options.min) ? Math.min.apply(Math, data.map(get_val)) : options.min,
+            dmax = isNaN(options.max) ? Math.max.apply(Math, data.map(get_val)) : options.max;
 
         // determine the sparkline's dimensions
-        var size = _size(parent),
-            // padding is the number of pixels to inset from the edges
-            padding = options.padding || 0,
-            width = options.width || size.width,
-            height = options.height || size.height;
+        // padding is the number of pixels to inset from the edges
+        var padding = options.padding || 0,
+            width = options.width || ~~parent.offsetWidth,
+            height = options.height || ~~parent.offsetHeight;
 
         // create the x and y scales
-        var XX = lib.scale.linear()
+        var XX = _linearScale()
                 .domain([0, data_len - 1])
                 .range([padding, width - padding]),
-            YY = lib.scale.linear()
+            YY = _linearScale()
                 .domain([dmin, dmax])
                 .range([height - padding, padding]);
 
@@ -186,7 +88,7 @@
                 avail_width = (width - padding * 2);
 
             // define our bar fill and positioning parameters
-            var bar_fill = lib.functor(options.bar_fill || "black"),
+            var bar_fill = _functor(options.bar_fill || "black"),
                 bar_spacing = isNaN(options.bar_spacing) ? 0 : options.bar_spacing,
                 bar_width = (avail_width - bar_spacing * (data_len - 1)) / data_len;
 
@@ -196,11 +98,11 @@
                     (val - baseline) / spread :
                     (baseline - val) / spread);
             };
-            var BY = lib.scale.linear()
+            var BY = _linearScale()
                 .domain([baseline, dmax])
                 .range([height - padding - BH(actual_min), padding])
                 .clamp(true);
-            var BX = lib.scale.linear()
+            var BX = _linearScale()
                 .domain([0, data_len - 1])
                 .range([padding, padding + avail_width - bar_width]);
 
@@ -277,10 +179,10 @@
             paper.appendChild(line);
 
             // define our radius and color getters for dots
-            var dot_radius = lib.functor(options.dot_radius),
-                dot_fill = lib.functor(options.dot_fill || "black"),
-                dot_stroke = lib.functor(options.dot_stroke || "none"),
-                dot_stroke_width = lib.functor(options.dot_stroke_width || 0);
+            var dot_radius = _functor(options.dot_radius),
+                dot_fill = _functor(options.dot_fill || "black"),
+                dot_stroke = _functor(options.dot_stroke || "none"),
+                dot_stroke_width = _functor(options.dot_stroke_width || 0);
 
             did_min = did_max = false;
             for (i = 0; i < data_len; i++) {
@@ -335,7 +237,7 @@
         // the value function (or key string) tells sparkline() how to extract
         // values from the data array. _identity() returns the value provided,
         // so it acts like a passthru for array values. See also: d3.identity()
-        value:              lib.identity,
+        value:              _identity,
         // the color of the sparkline's line
         line_stroke:        "black",
         // the stroke width of the sparkline's line
@@ -368,10 +270,9 @@
         };
 
         sparky.parse.numbers = function(str, parser) {
-            var numbers = split(str),
-                len = numbers.length;
+            var numbers = split(str);
             if (!parser) parser = Number;
-            for (var i = 0; i < len; i++) {
+            for (var i = 0; i < numbers.length; i++) {
                 numbers[i] = parser(numbers[i]);
             }
             return numbers;
@@ -394,9 +295,8 @@
             }
         }
 
-        if (!keys) keys = lib.keys(sparky.sparkline.defaults);
-        var len = keys.length;
-        for (var i = 0; i < len; i++) {
+        if (!keys) keys = Object.keys(sparky.sparkline.defaults);
+        for (var i = 0; i < keys.length; i++) {
             var key = keys[i],
                 val = _option(key);
             if (val !== null) {
@@ -504,14 +404,68 @@
     // internal utility functions:
 
     /**
-     * Get the intrinsic size ({width, height}) of an element in round pixels.
+     * Linear scaling.
      */
-    function _size(el) {
-        return {
-            width: ~~el.offsetWidth,
-            height: ~~el.offsetHeight
+    function _linearScale() {
+        var dmin = 0, dmax = 1,
+            rmin = 0, rmax = 1,
+            clamp = false,
+            scale = function(val) {
+                if (clamp) {
+                    if (val < dmin) val = dmin;
+                    if (val > dmax) val = dmax;
+                }
+                return rmin + (rmax - rmin) * (val - dmin) / (dmax - dmin);
+            };
+
+        scale.clamp = function(c) {
+            if (arguments.length) {
+                clamp = c;
+                return scale;
+            } else {
+                return clamp;
+            }
         };
-    }
+
+        scale.domain = function(domain) {
+            if (arguments.length) {
+                dmin = domain[0];
+                dmax = domain[1];
+                return scale;
+            } else {
+                return [dmin, dmax];
+            }
+        };
+
+        scale.range = function(range) {
+            if (arguments.length) {
+                rmin = range[0];
+                rmax = range[1];
+                return scale;
+            } else {
+                return [rmin, rmax];
+            }
+        };
+
+        return scale;
+    };
+
+    /**
+     * The identity function returns the value provided.
+     */
+    function _identity(v) {
+        return v;
+    };
+
+    /**
+     * Coerce a value into the identity function if it's not a function
+     * already.
+     */
+    function _functor(v) {
+        return (typeof v === "function") ?
+            v :
+            function() { return v; };
+    };
 
     /**
      * Override all of the iterable properties in the first object so that they
@@ -528,7 +482,7 @@
         }
         return o;
     }
-    
+
     /**
      * Create SVG namespace DOM elements.
      */
