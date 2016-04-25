@@ -360,7 +360,7 @@
         line_stroke:        "#888",
         line_stroke_width:  1,
         range_fill:         "#ddd",
-        dot_fill:           "#f00",
+        dot_fill:           "#333",
         dot_radius: function() {
             return this.last ? 2 : 0;
         }
@@ -368,14 +368,13 @@
 
     sparky.presets.extend("hilite-last", "hilite-peaks", {
         dot_fill: function() {
-            return (this.first || this.last) ?
-                "#f00" :
-                (this.min || this.max) ?
-                  "#339ACF" :
-                  null;
+            return this.last ? "#333" :
+                this.min ? "#46b8da" :
+                this.max ? "#d43f3a" :
+                null;
         },
         dot_radius: function() {
-            return (this.first || this.last || this.min || this.max) ?
+            return (this.last || this.min || this.max) ?
                 2 :
                 0;
         }
